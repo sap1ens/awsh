@@ -8,7 +8,7 @@ import argparse
 import itertools
 from collections import deque
 
-VERSION = "1.0.11"
+VERSION = "1.0.13"
 
 
 def connect(instance, args):
@@ -28,10 +28,19 @@ def connect(instance, args):
 
 
 def _connect(user, instance, args):
+    # use one of these for connection, ordered from the most preferable to the least preferable
+    potential_hosts = [instance.public_dns_name, instance.public_ip_address, instance.private_ip_address]
+    host = None
+
+    for potential_host in potential_hosts:
+        if potential_host:
+            host = potential_host
+            break
+
     config = {
         'key_path': get_key_path(args, instance),
         'tunnel': get_tunnel(args),
-        'host': "{}@{}".format(user, instance.public_dns_name),
+        'host': "{}@{}".format(user, host),
         'timeout': args.timeout
     }
     command = 'ssh -i {key_path} {tunnel} {host} -o ConnectTimeout={timeout}'.format(**config)
