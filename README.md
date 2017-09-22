@@ -14,6 +14,10 @@ If you never configured awscli before.
 
 Alternatively it can be downloaded on [pypi](https://pypi.python.org/pypi/awsh).
 
+To install this fork:
+
+    $ pip install -U https://github.com/sap1ens/awsh/archive/master.zip
+
 Requirements
 ------------
 
