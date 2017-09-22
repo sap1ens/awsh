@@ -75,6 +75,8 @@ def get_details(instance):
         'type': instance.instance_type,
         'private_dns_name': instance.private_dns_name,
         'public_dns_name': instance.public_dns_name,
+        'private_ip_address': instance.private_ip_address,
+        'public_ip_address': instance.public_ip_address,
         'availability_zone': instance.placement.get('AvailabilityZone'),
         'security_groups': instance.security_groups,
         'state': instance.state.get('Name'),
@@ -126,7 +128,7 @@ def main():
         exit(0)
 
     instances = get_instances(args)
-    display_instances(instances)
+    display_instances(instances, args)
 
     if not instances:
         print('No running instances found.\n')
@@ -139,8 +141,11 @@ def main():
         select_instance(args, instances, parser)
 
 
-def display_instances(instances):
-    details_fmt = "{:2} - {name:<30}{id:<21}{public_dns_name:<44}{private_dns_name:<30}{type:<12}({state})"
+def display_instances(instances, args):
+    if args.display_ip:
+        details_fmt = "{:2} - {name:<50}{id:<21}{public_ip_address:<16}{private_ip_address:<16}{type:<12}({state})"
+    else:
+        details_fmt = "{:2} - {name:<30}{id:<21}{public_dns_name:<44}{private_dns_name:<30}{type:<12}({state})"
     for i, instance in enumerate(instances):
         print(details_fmt.format(i, **get_details(instance)))
     print()
@@ -182,6 +187,7 @@ def create_parser():
     parser.add_argument('--timeout', help='SSH connection timeout.', default='5')
     parser.add_argument('--console-output', help='Display the instance console out before logging in.',
                         action='store_true')
+    parser.add_argument('--display-ip', help='Display IP addresses instead of DNS', action='store_true')
     parser.add_argument('--version', help='Returns awsh\'s version.', action='store_true')
     return parser
 
