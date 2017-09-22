@@ -108,6 +108,11 @@ def get_name(instance):
     return name[0].get('Value')
 
 
+def get_current_region():
+    session = boto3.session.Session()
+    return session.region_name
+
+
 def get_instances(args):
     ec2 = boto3.resource('ec2', region_name=args.region)
     filters = [
@@ -176,7 +181,7 @@ def create_parser():
                                                                'If only one instance is found, it will connect to it directly.')
     parser.add_argument('--users', nargs='+', help='Specify the users to try.',
                         default=['ubuntu', 'ec2-user'])
-    parser.add_argument('--region', help='Specify the aws region.', default='us-east-1')
+    parser.add_argument('--region', help='Specify the aws region.', default=get_current_region())
     parser.add_argument('-i', '--key-path', help='Specific key path, overrides, --keys')
     parser.add_argument('-c', '--command', help='Translates to ssh -C')
     parser.add_argument('-r', '--remote-host',
