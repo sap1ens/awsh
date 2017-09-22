@@ -1,6 +1,6 @@
 from distutils.core import setup
 
-VERSION='1.0.12'
+VERSION='1.0.13'
 
 setup(
     name='awsh',
@@ -13,7 +13,7 @@ setup(
     download_url='https://github.com/j-martin/awsh/archive/{}.tar.gz'.format(VERSION),
     keywords=['tool', 'aws', 'ec2'],
     classifiers=[],
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
     install_requires=[
         'awscli>=1.10.14',
         'boto3>=1.3.1'

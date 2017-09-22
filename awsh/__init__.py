@@ -8,7 +8,7 @@ import argparse
 import itertools
 from collections import deque
 
-VERSION = "1.0.11"
+VERSION = "1.0.13"
 
 
 def connect(instance, args):
@@ -28,10 +28,19 @@ def connect(instance, args):
 
 
 def _connect(user, instance, args):
+    # use one of these for connection, ordered from the most preferable to the least preferable
+    potential_hosts = [instance.public_dns_name, instance.public_ip_address, instance.private_ip_address]
+    host = None
+
+    for potential_host in potential_hosts:
+        if potential_host:
+            host = potential_host
+            break
+
     config = {
         'key_path': get_key_path(args, instance),
         'tunnel': get_tunnel(args),
-        'host': "{}@{}".format(user, instance.public_dns_name),
+        'host': "{}@{}".format(user, host),
         'timeout': args.timeout
     }
     command = 'ssh -i {key_path} {tunnel} {host} -o ConnectTimeout={timeout}'.format(**config)
@@ -66,6 +75,8 @@ def get_details(instance):
         'type': instance.instance_type,
         'private_dns_name': instance.private_dns_name,
         'public_dns_name': instance.public_dns_name,
+        'private_ip_address': instance.private_ip_address,
+        'public_ip_address': instance.public_ip_address,
         'availability_zone': instance.placement.get('AvailabilityZone'),
         'security_groups': instance.security_groups,
         'state': instance.state.get('Name'),
@@ -97,6 +108,11 @@ def get_name(instance):
     return name[0].get('Value')
 
 
+def get_current_region():
+    session = boto3.session.Session()
+    return session.region_name
+
+
 def get_instances(args):
     ec2 = boto3.resource('ec2', region_name=args.region)
     filters = [
@@ -117,7 +133,7 @@ def main():
         exit(0)
 
     instances = get_instances(args)
-    display_instances(instances)
+    display_instances(instances, args)
 
     if not instances:
         print('No running instances found.\n')
@@ -130,8 +146,11 @@ def main():
         select_instance(args, instances, parser)
 
 
-def display_instances(instances):
-    details_fmt = "{:2} - {name:<30}{id:<21}{public_dns_name:<44}{private_dns_name:<30}{type:<12}({state})"
+def display_instances(instances, args):
+    if args.display_ip:
+        details_fmt = "{:2} - {name:<50}{id:<21}{public_ip_address:<16}{private_ip_address:<16}{type:<12}({state})"
+    else:
+        details_fmt = "{:2} - {name:<30}{id:<21}{public_dns_name:<44}{private_dns_name:<30}{type:<12}({state})"
     for i, instance in enumerate(instances):
         print(details_fmt.format(i, **get_details(instance)))
     print()
@@ -162,7 +181,7 @@ def create_parser():
                                                                'If only one instance is found, it will connect to it directly.')
     parser.add_argument('--users', nargs='+', help='Specify the users to try.',
                         default=['ubuntu', 'ec2-user'])
-    parser.add_argument('--region', help='Specify the aws region.', default='us-east-1')
+    parser.add_argument('--region', help='Specify the aws region.', default=get_current_region())
     parser.add_argument('-i', '--key-path', help='Specific key path, overrides, --keys')
     parser.add_argument('-c', '--command', help='Translates to ssh -C')
     parser.add_argument('-r', '--remote-host',
@@ -173,6 +192,7 @@ def create_parser():
     parser.add_argument('--timeout', help='SSH connection timeout.', default='5')
     parser.add_argument('--console-output', help='Display the instance console out before logging in.',
                         action='store_true')
+    parser.add_argument('--display-ip', help='Display IP addresses instead of DNS', action='store_true')
     parser.add_argument('--version', help='Returns awsh\'s version.', action='store_true')
     return parser
 
